@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nextjs-prisma-vercel-starter-with-design-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nextjs_prisma_vercel_starter_with_design
+      POSTGRES_PASSWORD: nextjs_prisma_vercel_starter_with_design
+      POSTGRES_DB: nextjs_prisma_vercel_starter_with_design
+    ports:
+      # Host 5433 (port 5432 is reserved for other local Postgres instances).
+      # Container port stays 5432 so Postgres tooling inside the container is unaffected.
+      - '5433:5432'
+    volumes:
+      - nextjs-prisma-vercel-starter-with-design-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U nextjs_prisma_vercel_starter_with_design -d nextjs_prisma_vercel_starter_with_design',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 3s
+
+volumes:
+  nextjs-prisma-vercel-starter-with-design-pg-data:

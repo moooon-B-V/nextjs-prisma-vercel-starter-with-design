@@ -1,0 +1,21 @@
+// Prisma schema. Add your models here.
+//
+// Prisma 7: the datasource URL lives in `prisma.config.ts` (a runtime
+// adapter), not here. This file declares only the provider and the models.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Placeholder model that exists only so the initial migration has something
+/// to apply (Prisma needs at least one model to create a non-empty migration).
+/// Delete this once you add your real models, or rename it to whatever your
+/// first real entity is.
+model MigrationMarker {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+}
