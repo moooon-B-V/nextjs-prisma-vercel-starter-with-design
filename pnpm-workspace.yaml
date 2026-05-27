@@ -1,5 +1,12 @@
 allowBuilds:
   '@prisma/engines': true
+  # argon2 needs its native build (libargon2 bindings) for the auth
+  # password-hashing path that ships in /lib/auth/passwords.ts. Required by
+  # the auth surface; CI installs this build in the same pnpm install pass.
+  argon2: true
+  # esbuild ships with vitest (the test runner snapshotted in /tests) and
+  # needs its platform binary at install time.
+  esbuild: true
   prisma: true
   sharp: true
   unrs-resolver: true

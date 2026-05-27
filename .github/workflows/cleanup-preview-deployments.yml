@@ -1,0 +1,153 @@
+# Delete Vercel preview deployments when a PR closes (merged or not).
+#
+# Why this workflow exists
+# ------------------------
+# If you're using the Vercel-Managed Neon Marketplace integration (the
+# default when you connect Neon via Vercel's "Add Integration" UI),
+# Neon-branch cleanup is tied to Vercel deployment deletion, not to Git
+# branch deletion (see https://neon.com/docs/guides/vercel-branch-cleanup).
+# Vercel itself retains preview deployments for 6 months by default, so
+# without this workflow the Neon branches accumulate against your project's
+# branch limit and PR previews eventually start failing with "Resource
+# provisioning failed".
+#
+# This workflow listens for `pull_request: closed` (fires on both merge
+# and close-without-merge) and deletes every Vercel preview deployment
+# whose `meta.githubCommitRef` matches the PR's head branch. Vercel's
+# lifecycle hook then deletes the linked Neon branch automatically.
+#
+# Required GitHub repo configuration
+# ----------------------------------
+# After you deploy this starter to Vercel, set the following in
+# Settings → Secrets and variables → Actions:
+#
+#   secrets.VERCEL_TOKEN   — Vercel Access Token, team-scoped, with
+#     deployment-delete permission. Create at
+#     https://vercel.com/account/settings/tokens. Rotate annually.
+#
+#   vars.VERCEL_ORG_ID     — your Vercel team/org ID (e.g. team_xxx).
+#                            Visible in .vercel/project.json once linked.
+#   vars.VERCEL_PROJECT_ID — your Vercel project ID (prj_xxx).
+#                            Visible in .vercel/project.json once linked.
+#
+# Until those three are set, this workflow will fail on its first PR-close
+# event with a clear error — which is the right behavior. The error
+# surfaces the gap loudly instead of leaving Neon branches accumulating
+# silently.
+#
+# Security note: every reference to GitHub event inputs is routed through
+# an `env:` variable rather than spliced into a `run:` script. Branch
+# names accept characters that could be shell-interpreted; routing
+# through env vars is GitHub's recommended pattern.
+
+name: Cleanup preview deployments
+
+on:
+  pull_request:
+    types: [closed]
+
+# Run one cleanup per PR; if a follow-up event arrives (e.g. user
+# reopens then re-closes), the new run cancels any still-active prior run.
+concurrency:
+  group: cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  remove-deployments:
+    name: Delete preview deployments
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Enumerate and delete preview deployments
+        run: |
+          set -euo pipefail
+
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::error::Missing required configuration."
+            echo "Set secrets.VERCEL_TOKEN, vars.VERCEL_ORG_ID, and vars.VERCEL_PROJECT_ID"
+            echo "in this repository's Settings → Secrets and variables → Actions."
+            echo "See the comment at the top of this workflow for details."
+            exit 1
+          fi
+
+          echo "Cleaning up preview deployments for PR #${PR_NUMBER}"
+          echo "Head branch ref: ${PR_HEAD_REF}"
+          echo ""
+
+          # 1) List deployments for this project filtered by branch ref.
+          #    Vercel records the source branch under meta.githubCommitRef
+          #    (set by the GitHub integration on every push-triggered deploy).
+          #    --data-urlencode handles slashes in branch names.
+          LIST_RESPONSE=$(curl -sS -G \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            --data-urlencode "projectId=${VERCEL_PROJECT_ID}" \
+            --data-urlencode "teamId=${VERCEL_ORG_ID}" \
+            --data-urlencode "limit=100" \
+            --data-urlencode "target=preview" \
+            --data-urlencode "meta-githubCommitRef=${PR_HEAD_REF}" \
+            "https://api.vercel.com/v6/deployments")
+
+          # Bail loudly if the API returned an error (most often: token
+          # expired / insufficient scope). Without this the next `jq` would
+          # output nothing and the workflow would silently succeed with
+          # zero deletions, which is the worst possible failure mode for
+          # a cleanup job.
+          if echo "$LIST_RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+            echo "::error::Vercel API returned an error:"
+            echo "$LIST_RESPONSE" | jq -r '.error'
+            exit 1
+          fi
+
+          DEPLOYMENT_IDS=$(echo "$LIST_RESPONSE" | jq -r '.deployments[].uid')
+
+          if [ -z "$DEPLOYMENT_IDS" ]; then
+            echo "No preview deployments found for branch ${PR_HEAD_REF}. Nothing to clean up."
+            exit 0
+          fi
+
+          DEPLOYMENT_COUNT=$(echo "$DEPLOYMENT_IDS" | wc -l | tr -d ' ')
+          echo "Found ${DEPLOYMENT_COUNT} deployment(s) to delete:"
+          echo "$DEPLOYMENT_IDS"
+          echo ""
+
+          # 2) DELETE each deployment. Vercel-Neon lifecycle then cascades:
+          #    deleting the Vercel deployment triggers Neon to delete the
+          #    linked preview branch (Vercel-Managed integration's contract).
+          #
+          #    404 is treated as success (deployment already gone — e.g.
+          #    from a prior partial run or Vercel's own retention sweep).
+          #    Any other non-2xx is a hard failure.
+          FAILED=0
+          while IFS= read -r DEPLOY_ID; do
+            [ -z "$DEPLOY_ID" ] && continue
+            HTTP_CODE=$(curl -sS -o /tmp/del-resp.txt -w "%{http_code}" \
+              -X DELETE \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              "https://api.vercel.com/v13/deployments/${DEPLOY_ID}?teamId=${VERCEL_ORG_ID}")
+
+            case "$HTTP_CODE" in
+              2*) echo "  [${HTTP_CODE}] deleted ${DEPLOY_ID}" ;;
+              404) echo "  [${HTTP_CODE}] already gone ${DEPLOY_ID}" ;;
+              *)
+                echo "::error::Failed to delete ${DEPLOY_ID} (HTTP ${HTTP_CODE})"
+                cat /tmp/del-resp.txt
+                echo ""
+                FAILED=1
+                ;;
+            esac
+          done <<< "$DEPLOYMENT_IDS"
+
+          if [ "$FAILED" -ne 0 ]; then
+            exit 1
+          fi
+
+          echo ""
+          echo "Done. The Vercel-Neon integration will cascade-delete the"
+          echo "corresponding Neon preview branch within a few minutes."
