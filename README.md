@@ -181,7 +181,7 @@ lib/
   db.ts                 Singleton Prisma client with the dev-mode hot-reload guard
 instrumentation.ts      Next.js hook that installs the undici mock when
                         E2E_TEST_OAUTH=1 (no-op in normal dev/prod)
-middleware.ts           Session-cookie gate for the (authed) route group
+proxy.ts                Session-cookie gate for the (authed) route group (Next.js Proxy, formerly middleware)
 playwright.config.ts    E2E config — spawns its own dev server on :3000
 vitest.config.ts        Unit + integration test config (Node env, real Postgres)
 prisma/                 Prisma schema + migrations. The auth tables
@@ -229,8 +229,9 @@ reset, Google OAuth, session-gated routes — wired through
   (the token landing) — all under `app/(auth)/`, all card-wrapped using
   the design system.
 - **Protected dashboard**: `/dashboard` under `app/(authed)/`, gated by
-  `middleware.ts` (cookie presence check at the edge) + server-side
-  `getSession()` re-check on each request.
+  `proxy.ts` ([Next.js Proxy](https://nextjs.org/docs/messages/middleware-to-proxy),
+  formerly the middleware convention — a cookie presence check on every
+  request) + server-side `getSession()` re-check on each request.
 - **API**: Better-Auth's catch-all at `app/api/auth/[...all]/route.ts`
   handles all auth endpoints (`/api/auth/sign-up/email`,
   `/api/auth/sign-in/email`, `/api/auth/sign-in/social`,

@@ -1,8 +1,8 @@
 // Smoke route — proves that the (authed) route group is gated by
-// /middleware.ts and that server-side getSession() returns a populated
+// /proxy.ts and that server-side getSession() returns a populated
 // session for an authenticated request. Replace with your real dashboard
 // once you have one; the (authed) route group will protect any nested
-// route automatically as long as middleware.ts's matcher lists the URL.
+// route automatically as long as proxy.ts's matcher lists the URL.
 
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
