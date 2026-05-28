@@ -34,10 +34,16 @@ const contentVariants = cva(
   ),
   {
     variants: {
+      // Literal widths, NOT the max-w-sm/md/lg utilities: the design
+      // system's @theme defines --spacing-sm/md/lg (12/16/20px), and
+      // Tailwind v4 resolves `max-w-{key}` against the --spacing-* scale
+      // when that key exists — so `max-w-md` would collapse the modal to
+      // 16px wide. Pinning the rem values (Tailwind's stock sm/md/lg) keeps
+      // the design-system token set untouched and the dialog readable.
       size: {
-        sm: 'max-w-sm',
-        md: 'max-w-md',
-        lg: 'max-w-lg',
+        sm: 'max-w-[24rem]',
+        md: 'max-w-[28rem]',
+        lg: 'max-w-[32rem]',
       },
     },
     defaultVariants: { size: 'md' },
@@ -69,7 +75,23 @@ function ModalRoot({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
-        <Dialog.Content className={cn(contentVariants({ size }), className)}>
+        {/*
+          PRODECT_FINDINGS #8: Radix checks for a describing element
+          (Dialog.Description → aria-describedby) independently of the Title
+          check. When no `description` prop is passed we render no
+          Dialog.Description, so Radix logs a "Missing Description or
+          aria-describedby={undefined}" warning. We pick the explicit opt-out
+          (aria-describedby={undefined}) rather than emitting an empty sr-only
+          Description — an empty description announces nothing useful and is
+          worse for screen-reader users than declaring the dialog has none.
+        */}
+        <Dialog.Content
+          className={cn(contentVariants({ size }), className)}
+          // Only opt out when there's no description. When `description` is
+          // set we omit the prop entirely so Radix keeps auto-wiring
+          // aria-describedby to the rendered Dialog.Description's id.
+          {...(description ? {} : { 'aria-describedby': undefined })}
+        >
           {title || description ? (
             <div className="mb-(--spacing-md)">
               {title ? (
