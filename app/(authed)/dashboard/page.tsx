@@ -5,23 +5,30 @@
 // route automatically as long as proxy.ts's matcher lists the URL.
 
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { getSession } from '@/lib/auth';
 
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect('/sign-in');
 
+  const t = await getTranslations('dashboard');
+  const tc = await getTranslations('common');
+
   return (
     <main style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Dashboard (smoke route)</h1>
+      <h1>{t('title')}</h1>
       <p>
-        Signed in as <strong>{session.user.email}</strong>
+        {t.rich('signedInAs', {
+          email: session.user.email,
+          strong: (chunks) => <strong>{chunks}</strong>,
+        })}
       </p>
       <pre style={{ background: '#f4f4f4', padding: 12, fontSize: 12 }}>
         {JSON.stringify(session, null, 2)}
       </pre>
       <form action="/api/auth/sign-out" method="post">
-        <button type="submit">Sign out</button>
+        <button type="submit">{tc('signOut')}</button>
       </form>
     </main>
   );
