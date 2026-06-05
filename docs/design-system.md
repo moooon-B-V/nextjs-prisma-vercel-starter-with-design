@@ -71,19 +71,35 @@ Three families, defined in [`app/layout.tsx`](../app/layout.tsx) via
 | `text-3xl`     | 48px | serif            | h1, page titles.                     |
 | `text-display` | 80px | serif            | Hero display only.                   |
 
-### Spacing, radius, shadows
+### Spacing, radius, shadows — the SHAPE axis
 
-Eight spacing tokens (`--spacing-xxs`/4px through `--spacing-3xl`/40px, plus
-`--spacing-section`/64px). Five semantic radius tokens
-(`--radius-btn | input | card | modal | badge`) that flip with display style
-— `default` is Notion-sober (8-12px), `soft` is Figma-pill (24-32px,
-`--radius-btn` becomes a full pill). Five shadow tiers
-(`--shadow-flat | subtle | card | elevated | modal`) that soften further in
-`soft`. Full table in [`DESIGN.md` §5–6](./DESIGN.md#5-layout-principles).
+SHAPE is a swappable axis alongside colour: `data-display-style` re-shapes the
+whole UI the way a palette re-skins it, and ultimately lets a different
+[getdesign.md](https://getdesign.md) design system drop in. "Shape" is **not
+just radius** — it spans radius + control padding + control sizing + shadow.
+Every shaped surface references an element-semantic token that flips under
+`[data-display-style]`; never the generic Tier-0 scale (`--radius-xs/sm/md/lg`,
+`--spacing-xs/sm/md`) or a fixed `rounded-md` / `p-1` / `h-9` / `shadow-md`,
+which all bypass the swap layer.
 
-**Rule**: components reference the semantic shape tokens, not the raw
-`--radius-md` / `--shadow-card`. That's what lets display-style flips
-cascade cleanly without component changes.
+- **Radius** — 7 tokens, by surface: `--radius-btn | input | card | modal |
+badge | control | kbd`. `default` is Notion-sober (8–12px); `soft` is
+  Figma-pill (24–32px; `--radius-btn` a full pill, `--radius-control`/`-kbd`
+  round up too).
+- **Control padding & sizing** — major surfaces use `--spacing-{btn,input}-x/y`,
+  `--spacing-card-padding`, `--height-{btn-*,input}`; small affordances (menu
+  rows, icon/close buttons, chips, kbd, tooltips) use `--spacing-{control,
+icon-btn,chip,kbd,tooltip}-*` and `--height-control`. All roomier in `soft`.
+- **Shadow** — 5 tiers (`--shadow-flat | subtle | card | elevated | modal`),
+  softer in `soft`.
+- The raw spacing scale (`--spacing-md`, `gap-2`, one-off margins) is fine for
+  **layout** — gaps between siblings, page gutters — which is not a surface's
+  own shape. Full tables in [`DESIGN.md` §5–6](./DESIGN.md#5-layout-principles).
+
+**Rule**: a component references the semantic shape token for its radius, its
+own box padding, AND its height — not the raw `--radius-md` / `--spacing-md` /
+`p-1` / `shadow-card`. That's what lets a display-style flip (or a whole new
+design system) cascade cleanly without touching component code.
 
 ---
 
