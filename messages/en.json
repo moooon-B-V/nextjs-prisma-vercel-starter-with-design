@@ -1,0 +1,17 @@
+{
+  "common": {
+    "close": "Close",
+    "dialog": "Dialog",
+    "retry": "Try again",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "title": "Next.js + Prisma starter",
+    "subtitle": "with a polished design system",
+    "viewTokens": "view design tokens →"
+  },
+  "dashboard": {
+    "title": "Dashboard (smoke route)",
+    "signedInAs": "Signed in as <strong>{email}</strong>"
+  }
+}

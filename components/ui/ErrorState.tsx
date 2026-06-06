@@ -1,5 +1,6 @@
 import { forwardRef, type HTMLAttributes } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from './Button';
 import { Card } from './Card';
 import { cn } from '@/lib/utils/cn';
@@ -39,6 +40,7 @@ export const ErrorState = forwardRef<HTMLDivElement, ErrorStateProps>(function E
   { title, description, error, retry, className, ...rest },
   ref,
 ) {
+  const t = useTranslations('common');
   const showErrorDetail = error && process.env.NODE_ENV !== 'production';
   return (
     <Card
@@ -67,7 +69,7 @@ export const ErrorState = forwardRef<HTMLDivElement, ErrorStateProps>(function E
       {retry ? (
         <div className="mt-(--spacing-md)">
           <Button variant="secondary" onClick={retry}>
-            Try again
+            {t('retry')}
           </Button>
         </div>
       ) : null}

@@ -1,4 +1,10 @@
 allowBuilds:
+  # @parcel/watcher + @swc/core arrive as optional deps of next-intl (its
+  # build-time SWC plugin + file watcher), which this setup never uses. Skip
+  # their native builds to silence pnpm 11's ERR_PNPM_IGNORED_BUILDS gate so
+  # `pnpm install` doesn't exit 1 on CI/Vercel.
+  '@parcel/watcher': false
+  '@swc/core': false
   '@prisma/engines': true
   # argon2 needs its native build (libargon2 bindings) for the auth
   # password-hashing path that ships in /lib/auth/passwords.ts. Required by

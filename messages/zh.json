@@ -1,0 +1,17 @@
+{
+  "common": {
+    "close": "关闭",
+    "dialog": "对话框",
+    "retry": "重试",
+    "signOut": "退出登录"
+  },
+  "home": {
+    "title": "Next.js + Prisma 启动模板",
+    "subtitle": "内置精致的设计系统",
+    "viewTokens": "查看设计令牌 →"
+  },
+  "dashboard": {
+    "title": "仪表板（冒烟测试路由）",
+    "signedInAs": "已登录：<strong>{email}</strong>"
+  }
+}

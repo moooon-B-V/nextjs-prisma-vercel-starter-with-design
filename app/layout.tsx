@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono, Source_Serif_4 } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { ThemeProvider } from '@/lib/contexts/theme-context';
 import { themeInitScript } from '@/lib/theme/init-script';
 import { ToastProvider } from '@/components/ui/Toast';
+import { localeDir, type Locale } from '@/lib/i18n/locales';
 import './globals.css';
 
 /**
@@ -40,14 +43,21 @@ export const metadata: Metadata = {
     'Production-ready Next.js + Prisma + Vercel + Neon starter with a polished design system already wired in.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Locale comes from the NEXT_LOCALE cookie (resolved in i18n/request.ts), so
+  // <html lang/dir> is correct on the first byte — no client flash, and no need
+  // for a FOUC init script the way the theme attributes require one.
+  const locale = (await getLocale()) as Locale;
+  const messages = await getMessages();
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={localeDir[locale]}
       className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -66,9 +76,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full">
-        <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <ThemeProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
