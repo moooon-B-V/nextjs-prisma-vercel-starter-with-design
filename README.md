@@ -1,11 +1,24 @@
 # nextjs-prisma-vercel-starter-with-design
 
-A production-ready starter for **Next.js + Prisma + Vercel + Neon**, with
-a polished design system already wired in. Click "Use this template" above
-and ship in minutes — without spending a week building tokens, primitives,
-and a theme system from scratch.
+> ## ⚠️ Deprecated — use the bare starter + `@motir/design-system`
+>
+> This repo is **retired and archived (read-only)**. The design system is no
+> longer hand-copied into a separate template — it now ships as the published
+> [`@motir/design-system`](https://www.npmjs.com/package/@motir/design-system)
+> package, which the bare
+> **[`nextjs-prisma-vercel-starter`](https://github.com/moooon-B-V/nextjs-prisma-vercel-starter)**
+> imports by default. That pairing is the single source of truth.
+>
+> **Start a new project from
+> [`nextjs-prisma-vercel-starter`](https://github.com/moooon-B-V/nextjs-prisma-vercel-starter)**
+> — it comes with the design system wired in out of the box. Everything below
+> is kept for history only.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmoooon-B-V%2Fnextjs-prisma-vercel-starter-with-design)
+---
+
+A production-ready starter for **Next.js + Prisma + Vercel + Neon**, with
+a polished design system already wired in — without spending a week building
+tokens, primitives, and a theme system from scratch.
 
 ## What this is
 
