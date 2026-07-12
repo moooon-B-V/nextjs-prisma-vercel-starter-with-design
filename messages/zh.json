@@ -11,7 +11,7 @@
     "viewTokens": "查看设计令牌 →"
   },
   "dashboard": {
-    "title": "仪表板（冒烟测试路由）",
+    "title": "工作台（冒烟测试路由）",
     "signedInAs": "已登录：<strong>{email}</strong>"
   }
 }
